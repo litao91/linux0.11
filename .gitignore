@@ -1,0 +1,8 @@
+Thumbs.db
+*.log
+*.bak
+.DS_Store
+*.img
+*.o
+Image
+
