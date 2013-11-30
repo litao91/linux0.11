@@ -136,7 +136,9 @@ void main(void){
 #ifdef RAMDISK
     main_memory_start += rd_init(main_memory_start, RAMDISK*1024);
 #endif
+    // initialize memory management structure
     mem_init(main_memory_start,memory_end);
+
     trap_init();
     blk_dev_init();
     chr_dev_init();
