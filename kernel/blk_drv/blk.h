@@ -12,7 +12,7 @@
  * buffers when they are in the queue. 64 seems to be too many (easily
  * long pauses in reading when heavy writing/syncing is going on)
  */
-#define NR_REQUEST    32
+#define NR_REQUEST    32 // number of entries in the request-queue
 
 /*
  * Ok, this is an expanded form so that we can use the same
@@ -29,7 +29,7 @@ struct request {
     char * buffer;
     struct task_struct * waiting;
     struct buffer_head * bh;
-    struct request * next;
+    struct request * next; // A linked list
 };
 
 /*

@@ -66,11 +66,12 @@ extern long startup_time;
 
 /*
  * Yeah, yeah, it's ugly, but I cannot find how to do this correctly
- * and this seems to work. I anybody has more info on the real-time
+ * and this seems to work. If anybody has more info on the real-time
  * clock I'd be interested. Most of this was trial and error, and some
  * bios-listing reading. Urghh.
  */
 
+// read CMOS time
 #define CMOS_READ(addr) ({ \
 outb_p(0x80|addr,0x70); \
 inb_p(0x71); \
@@ -78,8 +79,7 @@ inb_p(0x71); \
 
 #define BCD_TO_BIN(val) ((val)=((val)&15) + ((val)>>4)*10)
 
-static void time_init(void)
-{
+static void time_init(void) {
     struct tm time;
 
     do {
@@ -97,7 +97,7 @@ static void time_init(void)
     BCD_TO_BIN(time.tm_mon);
     BCD_TO_BIN(time.tm_year);
     time.tm_mon--;
-    startup_time = kernel_mktime(&time);
+    startup_time = kernel_mktime(&time); //from 1970/1/1
 }
 
 static long memory_end = 0;
@@ -139,8 +139,8 @@ void main(void){
     // initialize memory management structure
     mem_init(main_memory_start,memory_end);
 
-    trap_init();
-    blk_dev_init();
+    trap_init(); // interruption initialization
+    blk_dev_init(); // block devices initialization.
     chr_dev_init();
     tty_init();
     time_init();
