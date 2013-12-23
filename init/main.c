@@ -139,13 +139,13 @@ void main(void){
     // initialize memory management structure
     mem_init(main_memory_start,memory_end);
 
-    trap_init(); // interruption initialization
-    blk_dev_init(); // block devices initialization.
-    chr_dev_init();
-    tty_init();
-    time_init();
-    sched_init();
-    buffer_init(buffer_memory_end);
+    trap_init();     // interruption initialization
+    blk_dev_init();  // block devices initialization.
+    chr_dev_init();  // character devices initialization, display and keyboard
+    tty_init();      // serial ports initialization (rs232 protocol)
+    time_init();     // read CMOS time and initialize startup time
+    sched_init();    // Schedule initialization
+    buffer_init(buffer_memory_end); // initialize the buffer
     hd_init();
     floppy_init();
     sti();
