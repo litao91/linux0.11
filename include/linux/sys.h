@@ -1,6 +1,6 @@
 extern int sys_setup();
 extern int sys_exit();
-extern int sys_fork();
+extern int sys_fork(); // corresponding to _sys_fork in system_call.s
 extern int sys_read();
 extern int sys_write();
 extern int sys_open();

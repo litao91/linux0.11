@@ -78,33 +78,33 @@ reschedule:
 	jmp schedule
 .align 2
 system_call:
-	cmpl $nr_system_calls-1,%eax
+	cmpl $nr_system_calls-1,%eax  # int 0x80 -- entrance of system call
 	ja bad_sys_call
-	push %ds
+	push %ds                      # The next 6 push are parameters for copy_
 	push %es
 	push %fs
 	pushl %edx
-	pushl %ecx		# push %ebx,%ecx,%edx as parameters
-	pushl %ebx		# to the system call
-	movl $0x10,%edx		# set up ds,es to kernel space
+	pushl %ecx                    # push %ebx,%ecx,%edx as parameters
+	pushl %ebx                    # to the system call
+	movl $0x10,%edx               # set up ds,es to kernel space
 	mov %dx,%ds
 	mov %dx,%es
-	movl $0x17,%edx		# fs points to local data space
+	movl $0x17,%edx               # fs points to local data space
 	mov %dx,%fs
-	call *sys_call_table(,%eax,4)
+	call *sys_call_table(,%eax,4) # call (_sys_call_table + 2x4, _sys_fork
 	pushl %eax
 	movl current,%eax
-	cmpl $0,state(%eax)		# state
+	cmpl $0,state(%eax)           # state
 	jne reschedule
-	cmpl $0,counter(%eax)		# counter
+	cmpl $0,counter(%eax)         # counter
 	je reschedule
 ret_from_sys_call:
-	movl current,%eax		# task[0] cannot have signals
+	movl current,%eax             # task[0] cannot have signals
 	cmpl task,%eax
 	je 3f
-	cmpw $0x0f,CS(%esp)		# was old code segment supervisor ?
+	cmpw $0x0f,CS(%esp)           # was old code segment supervisor ?
 	jne 3f
-	cmpw $0x17,OLDSS(%esp)		# was stack segment = 0x17 ?
+	cmpw $0x17,OLDSS(%esp)        # was stack segment = 0x17 ?
 	jne 3f
 	movl signal(%eax),%ebx
 	movl blocked(%eax),%ecx
@@ -207,9 +207,10 @@ sys_execve:
 .align 2
 sys_fork:
 	call find_empty_process
-	testl %eax,%eax
+	testl %eax,%eax # if the returned value is -EAGAIN(11), there have
+                    # been 64 processes running 
 	js 1f
-	push %gs
+	push %gs        # next 5 pushes for copy_process's parameters
 	pushl %esi
 	pushl %edi
 	pushl %ebp

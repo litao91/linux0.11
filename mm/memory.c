@@ -64,13 +64,13 @@ static unsigned char mem_map [ PAGING_PAGES ] = {0,};  //set all the elements to
  * Get physical address of first (actually last :-) free page, and mark it
  * used. If no free pages left, return 0.
  */
-unsigned long get_free_page(void)
+unsigned long get_free_page(void)              // traverse the mm_map[] find the first free page.
 {
 register unsigned long __res asm("ax");
 
-__asm__("std ; repne ; scasb\n\t"
-    "jne 1f\n\t"
-    "movb $1,1(%%edi)\n\t"
+__asm__("std ; repne ; scasb\n\t"              // inversely traverse mem_map[], repeat if al(0) neq
+    "jne 1f\n\t"                               // cannot find free page, jump to 1
+    "movb $1,1(%%edi)\n\t"                     // assign 1 to edi+1
     "sall $12,%%ecx\n\t"
     "addl %2,%%ecx\n\t"
     "movl %%ecx,%%edx\n\t"

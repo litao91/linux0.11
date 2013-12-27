@@ -22,7 +22,7 @@
  */
 static inline fork(void) __attribute__((always_inline));
 static inline pause(void) __attribute__((always_inline));
-static inline _syscall0(int,fork)
+static inline _syscall0(int,fork) // corresponding to fork()
 static inline _syscall0(int,pause)
 static inline _syscall1(int,setup,void *,BIOS)
 static inline _syscall0(int,sync)
@@ -50,6 +50,7 @@ extern void chr_dev_init(void);
 extern void hd_init(void);
 extern void floppy_init(void);
 extern void mem_init(long start, long end);
+// ram disk initialization
 extern long rd_init(long mem_start, int length); //dir: kernel/ramdisk.c, rd_init = ramdisk init
 extern long kernel_mktime(struct tm * tm);
 extern long startup_time;
@@ -139,17 +140,17 @@ void main(void){
     // initialize memory management structure
     mem_init(main_memory_start,memory_end);
 
-    trap_init();     // interruption initialization
-    blk_dev_init();  // block devices initialization.
-    chr_dev_init();  // character devices initialization, display and keyboard
-    tty_init();      // serial ports initialization (rs232 protocol)
-    time_init();     // read CMOS time and initialize startup time
-    sched_init();    // Schedule initialization
-    buffer_init(buffer_memory_end); // initialize the buffer
-    hd_init();
-    floppy_init();
-    sti();
-    move_to_user_mode();
+    trap_init();                     // interruption initialization
+    blk_dev_init();                  // block devices initialization.
+    chr_dev_init();                  // character devices initialization, display and keyboard
+    tty_init();                      // serial ports initialization (rs232 protocol)
+    time_init();                     // read CMOS time and initialize startup time
+    sched_init();                    // Schedule initialization
+    buffer_init(buffer_memory_end);  // initialize the buffer
+    hd_init();                       // initialize hard disk
+    floppy_init();                   // initialize floppy disk.
+    sti();                           // setup interruption  (re-enable)
+    move_to_user_mode();             // from privilege level 0 to 3
     if (!fork()) {        /* we count on this going ok */
         init();
     }
