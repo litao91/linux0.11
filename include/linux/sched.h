@@ -232,6 +232,7 @@ __asm__("movb %3,%%dh\n\t" \
 __base;})
 **/
 
+//get addr's base address
 static inline unsigned long _get_base(char * addr)
 {
          unsigned long __base;

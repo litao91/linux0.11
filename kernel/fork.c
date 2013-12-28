@@ -37,23 +37,29 @@ void verify_area(void * addr,int size)
     }
 }
 
+// child process's code segment, data segment and copy the
+// child process's first page table (from parent's page table)
 int copy_mem(int nr,struct task_struct * p)
 {
     unsigned long old_data_base,new_data_base,data_limit;
     unsigned long old_code_base,new_code_base,code_limit;
 
+    // get the limit of code and data segment
     code_limit=get_limit(0x0f);
     data_limit=get_limit(0x17);
-    old_code_base = get_base(current->ldt[1]);
-    old_data_base = get_base(current->ldt[2]);
+
+    // parent process's code segment and data segment's addr
+    old_code_base = get_base(current->ldt[1]); // ldt[1] code
+    old_data_base = get_base(current->ldt[2]); // ldt[2] data
     if (old_data_base != old_code_base)
         panic("We don't support separate I&D");
     if (data_limit < code_limit)
         panic("Bad data_limit");
+    // 0x4000000 is 64MB
     new_data_base = new_code_base = nr * 0x4000000;
     p->start_code = new_code_base;
-    set_base(p->ldt[1],new_code_base);
-    set_base(p->ldt[2],new_data_base);
+    set_base(p->ldt[1],new_code_base); // set base of code segment
+    set_base(p->ldt[2],new_data_base); // set base of data segment
     if (copy_page_tables(old_data_base,new_data_base,data_limit)) {
         printk("free_page_tables: from copy_mem\n");
         free_page_tables(new_data_base,data_limit);
@@ -91,6 +97,7 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
     *p = *current;    /* NOTE! this doesn't copy the supervisor stack */
                       /* This only copied the task_struct, the kernel
                        * stack haven't been copied */
+
     p->state = TASK_UNINTERRUPTIBLE; //only wake up when it is set to ready state
     p->pid = last_pid; // customized for child process
     p->father = current->pid;
@@ -101,7 +108,9 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
     p->utime = p->stime = 0;
     p->cutime = p->cstime = 0;
     p->start_time = jiffies;
-    p->tss.back_link = 0; // child process's tss
+
+    // child process's ts
+    p->tss.back_link = 0;
     p->tss.esp0 = PAGE_SIZE + (long) p;
     p->tss.ss0 = 0x10;
     p->tss.eip = eip;
@@ -122,13 +131,21 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
     p->tss.gs = gs & 0xffff;
     p->tss.ldt = _LDT(nr);
     p->tss.trace_bitmap = 0x80000000;
+
     if (last_task_used_math == current)
         __asm__("clts ; fnsave %0"::"m" (p->tss.i387));
+
+    // setup the code segment, data segment and create the
+    // first page table of child process
     if (copy_mem(nr,p)) {
         task[nr] = NULL;
         free_page((long) p);
         return -EAGAIN;
     }
+
+    // increase the count of file reference,
+    // since the child process also referencing the
+    // file that referenced by its parent.
     for (i=0; i<NR_OPEN;i++)
         if ((f=p->filp[i]))
             f->f_count++;
