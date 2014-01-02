@@ -54,8 +54,8 @@ static int NR_HD = 0;
 #endif
 
 static struct hd_struct {
-    long start_sect;
-    long nr_sects;
+    long start_sect;  // start sector number
+    long nr_sects;    // number of total sectors
 } hd[5*MAX_HD]={{0,0},};
 
 #define port_read(port,buf,nr) \
@@ -68,7 +68,7 @@ extern void hd_interrupt(void);
 extern void rd_load(void);
 
 /* This may be used only once, enforced by 'static int callable' */
-int sys_setup(void * BIOS)
+int sys_setup(void * BIOS) // BIOS is drive_info
 {
     static int callable = 1;
     int i,drive;
@@ -76,17 +76,17 @@ int sys_setup(void * BIOS)
     struct partition *p;
     struct buffer_head * bh;
 
-    if (!callable)
+    if (!callable) // make sure that only called once.
         return -1;
     callable = 0;
 #ifndef HD_TYPE
     for (drive=0 ; drive<2 ; drive++) {
-        hd_info[drive].cyl = *(unsigned short *) BIOS;
-        hd_info[drive].head = *(unsigned char *) (2+BIOS);
+        hd_info[drive].cyl = *(unsigned short *) BIOS; // cylinder num
+        hd_info[drive].head = *(unsigned char *) (2+BIOS); // head num
         hd_info[drive].wpcom = *(unsigned short *) (5+BIOS);
         hd_info[drive].ctl = *(unsigned char *) (8+BIOS);
         hd_info[drive].lzone = *(unsigned short *) (12+BIOS);
-        hd_info[drive].sect = *(unsigned char *) (14+BIOS);
+        hd_info[drive].sect = *(unsigned char *) (14+BIOS); // sector num in each track
         BIOS += 16;
     }
     if (hd_info[1].cyl)
@@ -94,6 +94,11 @@ int sys_setup(void * BIOS)
     else
         NR_HD=1;
 #endif
+    // Four logical disk for each physical disk.
+    // 0 -- physical disk
+    // 1-4 -- logical disks
+    // Total 5 disks for each physical disk
+    // Therefore, the first physical disk is 0*5, the second is 1*5
     for (i=0 ; i<NR_HD ; i++) {
         hd[i*5].start_sect = 0;
         hd[i*5].nr_sects = hd_info[i].head*
@@ -101,13 +106,13 @@ int sys_setup(void * BIOS)
     }
 
     /*
-        We querry CMOS about hard disks : it could be that
+        We query CMOS about hard disks : it could be that
         we have a SCSI/ESDI/etc controller that is BIOS
-        compatable with ST-506, and thus showing up in our
-        BIOS table, but not register compatable, and therefore
+        compatible with ST-506, and thus showing up in our
+        BIOS table, but not register compatible, and therefore
         not present in CMOS.
 
-        Furthurmore, we will assume that our ST-506 drives
+        Furthermore, we will assume that our ST-506 drives
         <if any> are the primary drives in the system, and
         the ones reflected as drive 1 or 2.
 
@@ -133,6 +138,9 @@ int sys_setup(void * BIOS)
         hd[i*5].start_sect = 0;
         hd[i*5].nr_sects = 0;
     }
+    // first physical disk with device number 0x300,
+    // the second is 0x305
+    // Read the 0 sector of each disk has the partition info
     for (drive=0 ; drive<NR_HD ; drive++) {
         if (!(bh = bread(0x300 + drive*5,0))) {
             printk("Unable to read partition table of drive %d\n\r",

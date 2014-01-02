@@ -109,9 +109,9 @@ void schedule(void) {
 
     for(p = &LAST_TASK ; p > &FIRST_TASK ; --p)
         if (*p) {
-            if ((*p)->alarm && (*p)->alarm < jiffies) {
-                    (*p)->signal |= (1<<(SIGALRM-1));
-                    (*p)->alarm = 0;
+            if ((*p)->alarm && (*p)->alarm < jiffies) { // if alarm is set or passed
+                    (*p)->signal |= (1<<(SIGALRM-1));   // set SIGALARM
+                    (*p)->alarm = 0;                    // clear alarm
                 }
             if (((*p)->signal & ~(_BLOCKABLE & (*p)->blocked)) &&
             (*p)->state==TASK_INTERRUPTIBLE)
@@ -132,7 +132,7 @@ void schedule(void) {
                 c = (*p)->counter, next = i;
         }
         if (c) break;
-        for(p = &LAST_TASK ; p > &FIRST_TASK ; --p)
+        for(p = &LAST_TASK ; p > &FIRST_TASK ; --p) // find the ready process with largest counter
             if (*p)
                 (*p)->counter = ((*p)->counter >> 1) +
                         (*p)->priority;
@@ -142,6 +142,9 @@ void schedule(void) {
 
 int sys_pause(void)
 {
+    // set process to interruptible sleep
+    // only interrupt or signal from other process
+    // can change this state to ready.
     current->state = TASK_INTERRUPTIBLE;
     schedule();
     return 0;

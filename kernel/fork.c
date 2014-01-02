@@ -155,6 +155,7 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
         current->root->i_count++;
     if (current->executable)
         current->executable->i_count++;
+    // setup GDT's child process
     set_tss_desc(gdt+(nr<<1)+FIRST_TSS_ENTRY,&(p->tss));
     set_ldt_desc(gdt+(nr<<1)+FIRST_LDT_ENTRY,&(p->ldt));
     p->state = TASK_RUNNING;    /* do this last, just in case */

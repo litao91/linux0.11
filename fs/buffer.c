@@ -268,11 +268,12 @@ void brelse(struct buffer_head * buf)
  * bread() reads a specified block and returns the buffer that contains
  * it. It returns NULL if the block was unreadable.
  */
+// read specified dev, block, the first hard disk is 0x300, block is
 struct buffer_head * bread(int dev,int block)
 {
     struct buffer_head * bh;
 
-    if (!(bh=getblk(dev,block)))
+    if (!(bh=getblk(dev,block))) // get the buffer block corresponding to dev and block
         panic("bread: getblk returned NULL\n");
     if (bh->b_uptodate)
         return bh;

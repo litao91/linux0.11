@@ -92,16 +92,16 @@ system_call:
 	movl $0x17,%edx               # fs points to local data space
 	mov %dx,%fs
 	call *sys_call_table(,%eax,4) # call (_sys_call_table + 2x4, _sys_fork
-	pushl %eax
-	movl current,%eax
+	pushl %eax                    # sys_fork return here, eax is last_pid
+	movl current,%eax 
 	cmpl $0,state(%eax)           # state
-	jne reschedule
+	jne reschedule                # reschedule is process 0 is not ready
 	cmpl $0,counter(%eax)         # counter
-	je reschedule
+	je reschedule                 # process 0 doesn't have time slice
 ret_from_sys_call:
 	movl current,%eax             # task[0] cannot have signals
 	cmpl task,%eax
-	je 3f
+	je 3f                         # if current is process 0, jump to 3
 	cmpw $0x0f,CS(%esp)           # was old code segment supervisor ?
 	jne 3f
 	cmpw $0x17,OLDSS(%esp)        # was stack segment = 0x17 ?
@@ -118,7 +118,7 @@ ret_from_sys_call:
 	pushl %ecx
 	call do_signal
 	popl %eax
-3:	popl %eax
+3:	popl %eax                      # process 0 jump here, pop to registers
 	popl %ebx
 	popl %ecx
 	popl %edx
@@ -215,9 +215,9 @@ sys_fork:
 	pushl %edi
 	pushl %ebp
 	pushl %eax
-	call copy_process
-	addl $20,%esp
-1:	ret
+	call copy_process 
+	addl $20,%esp# copy_process return here, clear stacks
+1:	ret # edi ebp eax
 
 hd_interrupt:
 	pushl %eax

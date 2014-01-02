@@ -171,18 +171,18 @@ __asm__("str %%ax\n\t" \
  * tha math co-processor latest.
  */
 #define switch_to(n) {\
-struct {long a,b;} __tmp; \
+struct {long a,b;} __tmp; \                // prepare CS and EIP for ljmp
 __asm__("cmpl %%ecx,current\n\t" \
-	"je 1f\n\t" \
-	"movw %%dx,%1\n\t" \
-	"xchgl %%ecx,current\n\t" \
-	"ljmp *%0\n\t" \
-	"cmpl %%ecx,last_task_used_math\n\t" \
+	"je 1f\n\t" \                          // do nothing if n is current
+	"movw %%dx,%1\n\t" \                   // assign CS to __tmp.b
+	"xchgl %%ecx,current\n\t" \            // exchange task[n] and task[current]
+	"ljmp *%0\n\t" \                       // ljmp to __tmp, __tmp has offset and segment selector
+	"cmpl %%ecx,last_task_used_math\n\t" \ // used coprocessor or not
 	"jne 1f\n\t" \
-	"clts\n" \
+	"clts\n" \                             // clear CR0
 	"1:" \
 	::"m" (*&__tmp.a),"m" (*&__tmp.b), \
-	"d" (_TSS(n)),"c" ((long) task[n])); \
+	"d" (_TSS(n)),"c" ((long) task[n])); \ // EDX point to task[n]
 }
 
 #define PAGE_ALIGN(n) (((n)+0xfff)&0xfffff000)
