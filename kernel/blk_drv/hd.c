@@ -41,6 +41,8 @@ static int reset = 0;
 
 /*
  *  This struct defines the HD's and their types.
+ *
+ *  hd information struct
  */
 struct hd_i_struct {
     int head,sect,cyl,wpcom,lzone,ctl;
@@ -185,6 +187,7 @@ static int win_result(void)
     return (1);
 }
 
+// sending hard-disk request
 static void hd_out(unsigned int drive,unsigned int nsect,unsigned int sect,
         unsigned int head,unsigned int cyl,unsigned int cmd,
         void (*intr_addr)(void))
@@ -299,6 +302,10 @@ static void recal_intr(void)
     do_hd_request();
 }
 
+/*
+ * Analysis the data member, calculate the sector, cylinder and so on
+ * Then create required parameters, and send request to hard-disk
+ */
 void do_hd_request(void)
 {
     int i,r = 0;

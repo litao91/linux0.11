@@ -41,7 +41,7 @@ static inline void wait_on_buffer(struct buffer_head * bh)
 {
     cli();
     while (bh->b_lock)
-        sleep_on(&bh->b_wait);
+        sleep_on(&bh->b_wait); // interruptible waiting
     sti();
 }
 
@@ -129,6 +129,8 @@ void check_disk_change(int dev)
     invalidate_buffers(dev);
 }
 
+// NR_HASH is 307
+// e.g. if dev is 0x300 and block is 0, _hashfn(dev, block) is 154
 #define _hashfn(dev,block) (((unsigned)(dev^block))%NR_HASH)
 #define hash(dev,block) hash_table[_hashfn(dev,block)]
 
@@ -189,6 +191,7 @@ struct buffer_head * get_hash_table(int dev, int block)
     struct buffer_head * bh;
 
     for (;;) {
+        // if it's in the buffer, return
         if (!(bh=find_buffer(dev,block)))
             return NULL;
         bh->b_count++;
@@ -205,6 +208,8 @@ struct buffer_head * get_hash_table(int dev, int block)
  * so it should be much more efficient than it looks.
  *
  * The algoritm is changed: hopefully better, and an elusive bug removed.
+ *
+ * get the buffer block corresponding to the specified dev and block
  */
 #define BADNESS(bh) (((bh)->b_dirt<<1)+(bh)->b_lock)
 struct buffer_head * getblk(int dev,int block)
@@ -212,8 +217,10 @@ struct buffer_head * getblk(int dev,int block)
     struct buffer_head * tmp, * bh;
 
 repeat:
-    if ((bh = get_hash_table(dev,block)))
+    if ((bh = get_hash_table(dev,block))) // if the block has been loaded
         return bh;
+
+    // block has not been loaded, find a free one.
     tmp = free_list;
     do {
         if (tmp->b_count)
@@ -229,7 +236,7 @@ repeat:
         sleep_on(&buffer_wait);
         goto repeat;
     }
-    wait_on_buffer(bh);
+    wait_on_buffer(bh); // hang up and wait for reading disk
     if (bh->b_count)
         goto repeat;
     while (bh->b_dirt) {
@@ -244,7 +251,7 @@ repeat:
         goto repeat;
 /* OK, FINALLY we know that this buffer is the only one of it's kind, */
 /* and that it's unused (b_count=0), unlocked (b_lock=0), and clean */
-    bh->b_count=1;
+    bh->b_count=1; // occupied
     bh->b_dirt=0;
     bh->b_uptodate=0;
     remove_from_queues(bh);

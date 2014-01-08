@@ -76,7 +76,7 @@ static void add_request(struct blk_dev_struct * dev, struct request * req)
     if (!(tmp = dev->current_request)) {
         dev->current_request = req;
         sti();
-        (dev->request_fn)();
+        (dev->request_fn)(); // do_hd_request()
         return;
     }
     for ( ; tmp->next ; tmp=tmp->next)
@@ -97,7 +97,7 @@ static void make_request(int major,int rw, struct buffer_head * bh)
 /* WRITEA/READA is special case - it is not really needed, so if the */
 /* buffer is locked, we just forget about it, else it's a normal read */
     if ((rw_ahead = (rw == READA || rw == WRITEA))) {
-        if (bh->b_lock)
+        if (bh->b_lock) // do nothing if locked
             return;
         if (rw == READA)
             rw = READ;
@@ -116,8 +116,8 @@ repeat:
  * we want some room for reads: they take precedence. The last third
  * of the requests are only for reads.
  */
-    if (rw == READ)
-        req = request+NR_REQUEST;
+    if (rw == READ) // higher precedence for read
+        req = request+NR_REQUEST; // "request" is the array of request
     else
         req = request+((NR_REQUEST*2)/3);
 /* find an empty request */
@@ -150,6 +150,8 @@ void ll_rw_block(int rw, struct buffer_head * bh)
 {
     unsigned int major;
 
+    // NR_BLK_DEV is 7, devices indexed from 0 to 6, >= 7 means
+    // doesn't exist
     if ((major=MAJOR(bh->b_dev)) >= NR_BLK_DEV ||
     !(blk_dev[major].request_fn)) {
         printk("Trying to read nonexistent block-device\n\r");
